@@ -15,7 +15,7 @@ https://multimodal-rag-web2.streamlit.app/
 
 ## 📸 Application
 
-![Multimodal RAG application](assets/app-screenshot.png)
+<img width="959" height="423" alt="app-screenshot" src="https://github.com/user-attachments/assets/08efc3b7-97a5-4891-84e8-8ce167a044b7" />
 
 ## 🧠 How It Works
 
@@ -249,60 +249,3 @@ __pycache__/
 ```
 
 Only `.env.example` is committed as a configuration template.
-
-## 🔬 Retrieval Strategy
-
-### Normal questions
-
-``` text
-Question
-   ↓
-CLIP text embedding
-   ↓
-ChromaDB similarity search
-   ↓
-Top-k text/image results
-   ↓
-Gemini
-   ↓
-Grounded answer
-```
-
-### Page-specific questions
-
-``` text
-"Tell me about page 24"
-             ↓
-     Detect page number
-             ↓
-       Page = 24
-             ↓
-  Exact page + source lookup
-             ↓
-      Retrieved context
-             ↓
-           Gemini
-             ↓
-        Grounded answer
-```
-
-This combination allows the system to support both **semantic
-retrieval** and **direct page-based retrieval**.
-
-## 🔮 Future Improvements
-
--   Add PDF table extraction as another information modality
--   Add a re-ranking stage for improved retrieval precision
--   Support more advanced multimodal embedding models
--   Add conversation-aware retrieval
--   Add evaluation using Precision@K, Recall@K, MRR, answer accuracy,
-    and hallucination rate
--   Use a hosted vector database for persistent cloud indexing
--   Add authentication and multi-user document collections
-
-## 👩‍💻 Author
-
-**Samruddhi**
-
-GitHub:\
-https://github.com/Samruddhi192105
