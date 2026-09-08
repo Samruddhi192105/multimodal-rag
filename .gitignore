@@ -1,0 +1,10 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+.env
+chroma_db/
+extracted_images/
+sample_docs/*.pdf
+.DS_Store
+.streamlit/secrets.toml
