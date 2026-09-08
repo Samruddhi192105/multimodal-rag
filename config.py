@@ -7,12 +7,16 @@ is hard-coded inside the pipeline logic.
 
 import os
 from pathlib import Path
+import streamlit as st
 from dotenv import load_dotenv
 
 load_dotenv()  # reads variables from a local .env file if present
 
 # ---------- API keys ----------
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+
+if not GEMINI_API_KEY:
+    GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY", "")
 
 # ---------- Paths ----------
 BASE_DIR = Path(__file__).resolve().parent
