@@ -1,242 +1,308 @@
-# Multimodal RAG
+# 📚 Multimodal RAG
 
-A Retrieval-Augmented Generation system that indexes **both text and images**
-from PDFs into one shared vector space (via CLIP), retrieves the most
-relevant mix of text chunks and images for a question, and generates a
-grounded answer using Google Gemini (a multimodal LLM that can read the
-retrieved images directly).
+A **Multimodal Retrieval-Augmented Generation (RAG)** application that
+retrieves and reasons over **both text and images from PDF documents**.
 
----
+The system uses **CLIP** to place text and images into a shared
+embedding space, **ChromaDB** for vector retrieval, and **Google
+Gemini** to generate grounded answers using the retrieved text and
+images.
 
-## 1. Architecture
+## 🚀 Live Demo
 
+**Try the deployed application:**\
+https://multimodal-rag-web2.streamlit.app/
+
+## 📸 Application
+
+![Multimodal RAG application](assets/app-screenshot.png)
+
+## 🧠 How It Works
+
+``` text
+                    PDF
+                     │
+          ┌──────────┴──────────┐
+          ▼                     ▼
+     Page Text               Images
+          │                     │
+          ▼                     ▼
+     Text Chunking        Image Extraction
+     500 chars             PyMuPDF
+     80 overlap                 │
+          │                     │
+          └──────────┬──────────┘
+                     ▼
+              CLIP Embeddings
+          Text + Images → shared space
+                     │
+                     ▼
+                 ChromaDB
+                     │
+               User Question
+                     │
+                     ▼
+             CLIP Text Embedding
+                     │
+                     ▼
+                Top-K Retrieval
+             ┌───────┴───────┐
+             ▼               ▼
+          Text Chunks      Images
+             │               │
+             └───────┬───────┘
+                     ▼
+              Google Gemini
+                     │
+                     ▼
+               Grounded Answer
 ```
-PDF files
-   │
-   ├─► PyMuPDF extracts page text ──► chunk (500 chars, 80 overlap)
-   └─► PyMuPDF extracts embedded images (filters out tiny icons)
-                        │
-                        ▼
-              CLIP (openai/clip-vit-base-patch32)
-        embeds text chunks AND images into ONE shared space
-                        │
-                        ▼
-                  Chroma (persistent, local)
-                        │
-      user query ──► CLIP text-embed ──► top-k nearest vectors
-                        │  (mix of text chunks + images)
-                        ▼
-        Gemini 2.0 Flash receives the text context AND the
-        actual retrieved images, then answers the question
-```
 
-Why CLIP for embeddings: it puts text and images in the *same* vector
-space, so a text query can retrieve a relevant image and vice versa —
-that's what makes this "multimodal" rather than just RAG with an image
-captioning step bolted on.
+### Page-specific retrieval
 
-## 2. Project structure
+For questions such as:
 
-```
+> "Tell me about page number 24"
+
+the application detects the requested page and retrieves the indexed
+content for that specific page instead of relying on semantic top-k
+search.
+
+For normal questions, the system performs **top-k similarity retrieval**
+across the selected PDF.
+
+## ✨ Key Features
+
+-   📄 Upload one or more PDF documents
+-   📝 Extract text from PDF pages using PyMuPDF
+-   🖼️ Extract embedded PDF images
+-   ✂️ Split text into overlapping chunks
+-   🔎 Generate shared text/image embeddings using CLIP
+-   🗄️ Store embeddings and metadata in ChromaDB
+-   🎯 Retrieve the top-k relevant text chunks and images
+-   📑 Support page-specific retrieval such as "page 24"
+-   🤖 Generate grounded answers with Google Gemini
+-   💬 Interactive Streamlit chat interface
+-   🌐 Deployed on Streamlit Community Cloud
+
+## 🛠️ Tech Stack
+
+  Component               Technology
+  ----------------------- ----------------------------------------------
+  UI                      Streamlit
+  PDF processing          PyMuPDF
+  Text/image embeddings   OpenAI CLIP (`openai/clip-vit-base-patch32`)
+  Vector database         ChromaDB
+  Generation              Google Gemini
+  Image processing        Pillow
+  Language                Python
+
+## 📁 Project Structure
+
+``` text
 multimodal-rag/
-├── app.py              # Streamlit chat UI
-├── ingest.py            # PDF → text/image extraction → embeddings → Chroma
-├── rag_pipeline.py       # retrieval + Gemini generation
-├── embeddings.py          # CLIP wrapper (shared text/image embedder)
-├── config.py               # paths, model names, chunking/retrieval params
-├── requirements.txt
-├── .env.example
-├── .gitignore
-└── sample_docs/            # drop your PDFs here
+├── app.py                 # Streamlit user interface
+├── config.py              # Configuration and model settings
+├── embeddings.py          # CLIP text/image embedding wrapper
+├── ingest.py              # PDF extraction, chunking and indexing
+├── rag_pipeline.py        # Retrieval and Gemini generation
+├── requirements.txt       # Python dependencies
+├── .env.example           # Environment variable template
+├── .gitignore             # Ignored files and secrets
+├── assets/
+│   └── app-screenshot.png # Application screenshot
+└── sample_docs/
+    └── .gitkeep
 ```
 
----
+## ⚙️ Local Setup
 
-## 3. Prerequisites
+### 1. Clone the repository
 
-- Python 3.10+
-- VS Code with the **Python extension** (ms-python.python)
-- A GitHub account
-- A free Gemini API key: https://aistudio.google.com/app/apikey
+``` bash
+git clone https://github.com/Samruddhi192105/multimodal-rag.git
+cd multimodal-rag
+```
 
----
+### 2. Create a virtual environment
 
-## 4. Local setup in VS Code (step by step)
-
-### Step 1 — Open the project
-Open the `multimodal-rag` folder in VS Code: `File → Open Folder...`
-
-### Step 2 — Create a virtual environment
-Open the VS Code integrated terminal (`` Ctrl+` ``) and run:
-
-```bash
+``` bash
 python -m venv venv
 ```
 
 Activate it:
 
-```bash
-# Windows
-venv\Scripts\activate
+**Windows**
 
-# macOS / Linux
+``` bash
+venv\Scripts\activate
+```
+
+**macOS / Linux**
+
+``` bash
 source venv/bin/activate
 ```
 
-VS Code will usually pop up a prompt asking "Select this environment for
-the workspace?" — click **Yes**. If it doesn't, open the Command Palette
-(`Ctrl+Shift+P`) → `Python: Select Interpreter` → pick the one inside
-`venv`.
+### 3. Install dependencies
 
-### Step 3 — Install dependencies
-
-```bash
+``` bash
 pip install -r requirements.txt
 ```
 
-### Step 4 — Add your API key
-Copy the template and fill it in:
+### 4. Configure Gemini
 
-```bash
-# Windows
+Copy the example environment file:
+
+**Windows**
+
+``` bash
 copy .env.example .env
+```
 
-# macOS / Linux
+**macOS / Linux**
+
+``` bash
 cp .env.example .env
 ```
 
-Open `.env` and paste your key:
+Add your Gemini API key to `.env`:
 
+``` env
+GEMINI_API_KEY=your_api_key_here
 ```
-GEMINI_API_KEY=AIza...your_real_key...
+
+**Never commit `.env` or your actual API key to GitHub.**
+
+### 5. Add PDFs
+
+Place your PDF files inside:
+
+``` text
+sample_docs/
 ```
 
-### Step 5 — Add documents
-Drop one or more PDFs into `sample_docs/` (PDFs with diagrams/photos in
-them show off the multimodal retrieval best).
+PDFs containing diagrams, charts, or other images are especially useful
+for demonstrating the multimodal retrieval capability.
 
-### Step 6 — Build the index
+### 6. Build the index
 
-```bash
+``` bash
 python ingest.py
 ```
 
-You should see output like:
+The ingestion pipeline:
 
-```
-Processing my_paper.pdf ...
-  indexed 42 text chunks
-  indexed 6 images
-Done. Collection size: 48
-```
+1.  Opens each PDF.
+2.  Extracts page text.
+3.  Creates overlapping text chunks.
+4.  Extracts embedded images.
+5.  Generates CLIP embeddings for text and images.
+6.  Stores embeddings and metadata in ChromaDB.
 
-### Step 7 — Run the app
+### 7. Run the application
 
-```bash
+``` bash
 streamlit run app.py
 ```
 
-This opens `http://localhost:8501` in your browser. You can also use the
-sidebar's "Upload PDF(s)" + "Build / refresh index" instead of steps 5–6.
+Then open the local Streamlit URL shown in the terminal.
 
----
+You can also upload PDFs directly from the application's sidebar and
+click **Build / refresh index**.
 
-## 5. Pushing to GitHub (step by step)
+## ☁️ Deployment
 
-### Step 1 — Initialize git
-In the VS Code terminal, inside `multimodal-rag/`:
+The application is deployed using **Streamlit Community Cloud**.
 
-```bash
-git init
-git add .
-git commit -m "Initial commit: multimodal RAG pipeline"
+### Deployment configuration
+
+``` text
+Repository:  Samruddhi192105/multimodal-rag
+Branch:      main
+Main file:   app.py
 ```
 
-`.env`, `venv/`, `chroma_db/`, and extracted images are already excluded
-via `.gitignore` — never commit your API key.
+Add the Gemini API key through the deployment platform's **Secrets**
+settings rather than committing it to the repository.
 
-### Step 2 — Create the GitHub repo
-Go to https://github.com/new, name it (e.g. `multimodal-rag`), leave it
-empty (no README/license — you already have files), and click **Create
-repository**.
+### Live application
 
-### Step 3 — Connect and push
+https://multimodal-rag-web2.streamlit.app/
 
-```bash
-git branch -M main
-git remote add origin https://github.com/<your-username>/multimodal-rag.git
-git push -u origin main
+> The deployed environment does not rely on the Chroma index generated
+> on your local machine. Upload the required PDF through the application
+> and build/refresh the index in the deployed environment.
+
+## 🔐 Security
+
+The Gemini API key is kept outside the repository.
+
+The following are excluded using `.gitignore`:
+
+``` text
+.env
+venv/
+chroma_db/
+extracted_images/
+__pycache__/
 ```
 
-(VS Code's built-in **Source Control** panel, the icon on the left
-sidebar, does the same thing with buttons if you prefer a GUI: Initialize
-Repository → stage all → commit → Publish Branch.)
+Only `.env.example` is committed as a configuration template.
 
-### Step 4 — Verify
-Refresh your GitHub repo page — all files except the ignored ones should
-be there.
+## 🔬 Retrieval Strategy
 
----
+### Normal questions
 
-## 6. Deployment (Streamlit Community Cloud — free)
-
-### Step 1 — Go to Streamlit Cloud
-Visit https://share.streamlit.io and sign in with GitHub.
-
-### Step 2 — New app
-Click **New app** → select your `multimodal-rag` repository → branch
-`main` → main file path `app.py`.
-
-### Step 3 — Add your secret
-Before deploying, click **Advanced settings** → **Secrets**, and add:
-
-```toml
-GEMINI_API_KEY = "AIza...your_real_key..."
+``` text
+Question
+   ↓
+CLIP text embedding
+   ↓
+ChromaDB similarity search
+   ↓
+Top-k text/image results
+   ↓
+Gemini
+   ↓
+Grounded answer
 ```
 
-This is the cloud equivalent of your local `.env` file — Streamlit Cloud
-injects it as an environment variable at runtime, so `config.py` picks it
-up the same way via `os.getenv`.
+### Page-specific questions
 
-### Step 4 — Deploy
-Click **Deploy**. First build takes a few minutes (installing torch and
-transformers). Once live, you'll get a public URL like
-`https://your-app-name.streamlit.app`.
-
-### Step 5 — Re-indexing on the deployed app
-Streamlit Cloud's filesystem is ephemeral, so the index built on your
-laptop doesn't travel with the repo. Upload your PDFs through the app's
-sidebar and click "Build / refresh index" once after each deploy/restart.
-
-> **Note on free-tier limits:** the CLIP model (~600MB) and torch are
-> heavy for Streamlit Cloud's free 1GB RAM tier. If you hit memory
-> errors, switch `CLIP_MODEL_NAME` in `config.py` to a smaller model such
-> as `"openai/clip-vit-base-patch16"`, or deploy instead to
-> [Hugging Face Spaces](https://huggingface.co/spaces) (free tier, more
-> RAM, built specifically for ML apps — choose the "Streamlit" SDK when
-> creating the Space, then push this same repo to it).
-
----
-
-## 7. Alternative deployment: Hugging Face Spaces
-
-```bash
-# after creating a new Space (SDK: Streamlit) on huggingface.co
-git remote add hf https://huggingface.co/spaces/<your-username>/multimodal-rag
-git push hf main
+``` text
+"Tell me about page 24"
+             ↓
+     Detect page number
+             ↓
+       Page = 24
+             ↓
+  Exact page + source lookup
+             ↓
+      Retrieved context
+             ↓
+           Gemini
+             ↓
+        Grounded answer
 ```
 
-Add `GEMINI_API_KEY` under the Space's **Settings → Repository secrets**.
+This combination allows the system to support both **semantic
+retrieval** and **direct page-based retrieval**.
 
----
+## 🔮 Future Improvements
 
-## 8. Extending this project
+-   Add PDF table extraction as another information modality
+-   Add a re-ranking stage for improved retrieval precision
+-   Support more advanced multimodal embedding models
+-   Add conversation-aware retrieval
+-   Add evaluation using Precision@K, Recall@K, MRR, answer accuracy,
+    and hallucination rate
+-   Use a hosted vector database for persistent cloud indexing
+-   Add authentication and multi-user document collections
 
-- Swap Gemini for a local model (LLaVA via Ollama) for a fully offline
-  pipeline.
-- Add PDF tables as a third modality (extract with `camelot` or
-  `pdfplumber`, embed as text).
-- Add re-ranking: retrieve top-20 with CLIP, re-rank top-5 with a
-  cross-encoder for higher precision.
-- Swap Chroma for a hosted vector DB (Pinecone/Weaviate) if you need
-  persistence across ephemeral cloud filesystems without re-indexing.
+## 👩‍💻 Author
+
+**Samruddhi**
+
+GitHub:\
+https://github.com/Samruddhi192105
